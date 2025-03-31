@@ -1,11 +1,11 @@
 /*
-	heap
-	This question requires you to implement a binary heap function
+    heap
+    This question requires you to implement a binary heap function
 */
-// I AM NOT DONE
 
 use std::cmp::Ord;
 use std::default::Default;
+use std::process::id;
 
 pub struct Heap<T>
 where
@@ -18,7 +18,7 @@ where
 
 impl<T> Heap<T>
 where
-    T: Default,
+    T: Default + Clone,
 {
     pub fn new(comparator: fn(&T, &T) -> bool) -> Self {
         Self {
@@ -37,7 +37,19 @@ where
     }
 
     pub fn add(&mut self, value: T) {
-        //TODO
+        self.count += 1;
+        let mut idx = self.count;
+        self.items.push(value.clone());
+
+        while idx != 1 {
+            let p = self.parent_idx(idx);
+            if !(self.comparator)(&value, &self.items[p]) {
+                return;
+            }
+            (self.items[idx], self.items[p]) =
+                (self.items[p].clone(), self.items[idx].clone());
+            idx = p;
+        }
     }
 
     fn parent_idx(&self, idx: usize) -> usize {
@@ -57,14 +69,31 @@ where
     }
 
     fn smallest_child_idx(&self, idx: usize) -> usize {
-        //TODO
-		0
+        if self.children_present(idx) {
+            let left = self.left_child_idx(idx);
+            let right = self.right_child_idx(idx);
+
+            if left > self.count {
+                return right;
+            };
+            if right > self.count {
+                return left;
+            };
+
+            if (self.comparator)(&self.items[left], &self.items[right]) {
+                left
+            } else {
+                right
+            }
+        } else {
+            idx
+        }
     }
 }
 
 impl<T> Heap<T>
 where
-    T: Default + Ord,
+    T: Default + Ord + Clone,
 {
     /// Create a new MinHeap
     pub fn new_min() -> Self {
@@ -79,13 +108,31 @@ where
 
 impl<T> Iterator for Heap<T>
 where
-    T: Default,
+    T: Default + Clone + Ord,
 {
     type Item = T;
 
     fn next(&mut self) -> Option<T> {
-        //TODO
-		None
+        let Some(result) = self.items.get(1).cloned() else {
+            return None;
+        };
+
+        (self.items[1], self.items[self.count]) =
+            (self.items[self.count].clone(), self.items[1].clone());
+        self.count -= 1;
+        let mut idx = 1;
+        while self.children_present(idx) {
+            let c = self.smallest_child_idx(idx);
+            if (self.comparator)(&self.items[idx], &self.items[c]) {
+                break;
+            }
+            (self.items[idx], self.items[c]) =
+                (self.items[c].clone(), self.items[idx].clone());
+            idx = c;
+        }
+        self.items.pop();
+
+        Some(result)
     }
 }
 
@@ -95,7 +142,7 @@ impl MinHeap {
     #[allow(clippy::new_ret_no_self)]
     pub fn new<T>() -> Heap<T>
     where
-        T: Default + Ord,
+        T: Default + Ord + Clone,
     {
         Heap::new(|a, b| a < b)
     }
@@ -107,7 +154,7 @@ impl MaxHeap {
     #[allow(clippy::new_ret_no_self)]
     pub fn new<T>() -> Heap<T>
     where
-        T: Default + Ord,
+        T: Default + Ord + Clone,
     {
         Heap::new(|a, b| a > b)
     }
